@@ -1,0 +1,425 @@
+
+<h2 class="sr-only">Real-time financial fraud detection system simulation with live transaction feed, ML model classification, and analytics dashboard.</h2>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-mono, monospace); }
+  
+  .fd-root { padding: 1rem 0; }
+  
+  .fd-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 8px; }
+  .fd-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: 0.08em; text-transform: uppercase; }
+  .fd-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--color-background-success); color: var(--color-text-success); border: 0.5px solid var(--color-border-success); display: flex; align-items: center; gap: 5px; }
+  .fd-badge::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-success); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .fd-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .fd-metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem 1rem; }
+  .fd-metric-label { font-size: 11px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; font-family: var(--font-sans); }
+  .fd-metric-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); line-height: 1; }
+  .fd-metric-val.danger { color: var(--color-text-danger); }
+  .fd-metric-val.success { color: var(--color-text-success); }
+  .fd-metric-val.warn { color: var(--color-text-warning); }
+  .fd-metric-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; font-family: var(--font-sans); }
+
+  .fd-panels { display: grid; grid-template-columns: 1fr 280px; gap: 12px; margin-bottom: 12px; }
+
+  .fd-feed-wrap { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .fd-feed-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .fd-feed-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-sans); }
+  .fd-feed-ctrl { display: flex; gap: 8px; }
+  .fd-btn { font-size: 12px; font-family: var(--font-sans); padding: 4px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); cursor: pointer; }
+  .fd-btn:hover { background: var(--color-background-secondary); }
+  .fd-btn.active { background: var(--color-background-danger); color: var(--color-text-danger); border-color: var(--color-border-danger); }
+
+  .fd-feed { height: 320px; overflow-y: auto; font-size: 11.5px; }
+  .fd-row { display: grid; grid-template-columns: 90px 120px 90px 70px 80px 1fr; gap: 8px; padding: 7px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); align-items: center; transition: background 0.2s; font-family: var(--font-mono); }
+  .fd-row:hover { background: var(--color-background-secondary); }
+  .fd-row.fraud { background: rgba(220,50,50,0.04); }
+  .fd-row.new { animation: rowIn 0.3s ease; }
+  @keyframes rowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  .fd-col-head { font-size: 10px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-sans); font-weight: 500; }
+  .fd-tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-family: var(--font-sans); }
+  .fd-tag.ok { background: var(--color-background-success); color: var(--color-text-success); }
+  .fd-tag.fraud { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .fd-tag.review { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .fd-score { font-size: 11px; color: var(--color-text-secondary); }
+
+  .fd-model-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .fd-model-header { padding: 10px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-sans); }
+  .fd-model-list { padding: 8px 0; }
+  .fd-model-item { padding: 8px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .fd-model-item:last-child { border-bottom: none; }
+  .fd-model-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-sans); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .fd-model-acc { font-size: 11px; color: var(--color-text-secondary); font-family: var(--font-sans); }
+  .fd-bar-track { background: var(--color-background-secondary); border-radius: 3px; height: 4px; margin-top: 4px; overflow: hidden; }
+  .fd-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .fd-model-item.active-model .fd-model-name { color: var(--color-text-info); }
+
+  .fd-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fd-chart-box { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 14px; }
+  .fd-chart-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-sans); margin-bottom: 10px; }
+
+  .fd-alerts { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .fd-alert-header { padding: 10px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-sans); }
+  .fd-alert-list { padding: 0; max-height: 160px; overflow-y: auto; }
+  .fd-alert-item { padding: 8px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; gap: 10px; align-items: flex-start; animation: rowIn 0.3s ease; }
+  .fd-alert-item:last-child { border-bottom: none; }
+  .fd-alert-icon { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+  .fd-alert-body { flex: 1; }
+  .fd-alert-msg { font-size: 12px; color: var(--color-text-primary); font-family: var(--font-sans); }
+  .fd-alert-time { font-size: 10px; color: var(--color-text-secondary); font-family: var(--font-sans); margin-top: 1px; }
+
+  .fd-pipeline { display: flex; align-items: center; gap: 0; margin-bottom: 12px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .fd-pipe-step { flex: 1; padding: 8px 10px; text-align: center; border-right: 0.5px solid var(--color-border-tertiary); position: relative; }
+  .fd-pipe-step:last-child { border-right: none; }
+  .fd-pipe-name { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-sans); }
+  .fd-pipe-val { font-size: 13px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-mono); }
+  .fd-pipe-step.hot .fd-pipe-val { color: var(--color-text-warning); }
+  .fd-pipe-step.ok .fd-pipe-val { color: var(--color-text-success); }
+
+  .fd-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .fd-controls label { font-size: 12px; color: var(--color-text-secondary); font-family: var(--font-sans); }
+  .fd-speed-track { display: flex; align-items: center; gap: 8px; }
+  .fd-controls select { font-size: 12px; font-family: var(--font-sans); padding: 4px 8px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); }
+</style>
+
+<div class="fd-root">
+  <div class="fd-header">
+    <div class="fd-title">Fraud Detection System</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="fd-badge" id="sys-status">System Active</div>
+      <span style="font-size:11px;color:var(--color-text-secondary);font-family:var(--font-sans);" id="sys-time"></span>
+    </div>
+  </div>
+
+  <div class="fd-metrics" id="metrics">
+    <div class="fd-metric"><div class="fd-metric-label">Total Processed</div><div class="fd-metric-val" id="m-total">0</div><div class="fd-metric-sub">transactions</div></div>
+    <div class="fd-metric"><div class="fd-metric-label">Fraud Detected</div><div class="fd-metric-val danger" id="m-fraud">0</div><div class="fd-metric-sub" id="m-fraud-pct">—</div></div>
+    <div class="fd-metric"><div class="fd-metric-label">Avg Confidence</div><div class="fd-metric-val success" id="m-conf">—</div><div class="fd-metric-sub">model score</div></div>
+    <div class="fd-metric"><div class="fd-metric-label">Amount Blocked</div><div class="fd-metric-val warn" id="m-blocked">$0</div><div class="fd-metric-sub">USD saved</div></div>
+  </div>
+
+  <div class="fd-controls">
+    <label>Speed:</label>
+    <div class="fd-speed-track">
+      <input type="range" min="200" max="2000" step="100" value="800" id="speed-slider" style="width:100px">
+      <span style="font-size:12px;color:var(--color-text-secondary);font-family:var(--font-sans);min-width:50px;" id="speed-label">800ms</span>
+    </div>
+    <label>Model:</label>
+    <select id="model-select">
+      <option value="rf">Random Forest</option>
+      <option value="lr">Logistic Regression</option>
+      <option value="dt">Decision Tree</option>
+      <option value="nn">Neural Network</option>
+    </select>
+    <button class="fd-btn active" id="toggle-btn" onclick="toggleStream()">Pause</button>
+    <button class="fd-btn" onclick="clearFeed()">Clear</button>
+  </div>
+
+  <div class="fd-pipeline">
+    <div class="fd-pipe-step"><div class="fd-pipe-name">Kafka In</div><div class="fd-pipe-val" id="p-in">0</div></div>
+    <div class="fd-pipe-step hot"><div class="fd-pipe-name">Spark Process</div><div class="fd-pipe-val" id="p-spark">0ms</div></div>
+    <div class="fd-pipe-step"><div class="fd-pipe-name">Feature Eng</div><div class="fd-pipe-val" id="p-feat">0</div></div>
+    <div class="fd-pipe-step ok"><div class="fd-pipe-name">ML Predict</div><div class="fd-pipe-val" id="p-pred">0ms</div></div>
+    <div class="fd-pipe-step"><div class="fd-pipe-name">Decision</div><div class="fd-pipe-val" id="p-dec">0</div></div>
+  </div>
+
+  <div class="fd-panels">
+    <div class="fd-feed-wrap">
+      <div class="fd-feed-header">
+        <div class="fd-feed-title">Live Transaction Feed</div>
+        <div class="fd-feed-ctrl">
+          <span style="font-size:11px;color:var(--color-text-secondary);font-family:var(--font-sans);line-height:2;" id="filter-label">All</span>
+          <button class="fd-btn" onclick="setFilter('all')">All</button>
+          <button class="fd-btn" onclick="setFilter('fraud')">Fraud only</button>
+        </div>
+      </div>
+      <div class="fd-row">
+        <span class="fd-col-head">Time</span>
+        <span class="fd-col-head">Merchant</span>
+        <span class="fd-col-head">Amount</span>
+        <span class="fd-col-head">Country</span>
+        <span class="fd-col-head">Status</span>
+        <span class="fd-col-head">Risk score</span>
+      </div>
+      <div class="fd-feed" id="tx-feed"></div>
+    </div>
+
+    <div class="fd-model-panel">
+      <div class="fd-model-header">ML Models</div>
+      <div class="fd-model-list">
+        <div class="fd-model-item" id="mi-rf">
+          <div class="fd-model-name"><span>Random Forest</span><span class="fd-model-acc" id="acc-rf">—</span></div>
+          <div class="fd-bar-track"><div class="fd-bar-fill" id="bar-rf" style="width:0%;background:#378ADD;"></div></div>
+        </div>
+        <div class="fd-model-item" id="mi-lr">
+          <div class="fd-model-name"><span>Logistic Regression</span><span class="fd-model-acc" id="acc-lr">—</span></div>
+          <div class="fd-bar-track"><div class="fd-bar-fill" id="bar-lr" style="width:0%;background:#1D9E75;"></div></div>
+        </div>
+        <div class="fd-model-item" id="mi-dt">
+          <div class="fd-model-name"><span>Decision Tree</span><span class="fd-model-acc" id="acc-dt">—</span></div>
+          <div class="fd-bar-track"><div class="fd-bar-fill" id="bar-dt" style="width:0%;background:#BA7517;"></div></div>
+        </div>
+        <div class="fd-model-item" id="mi-nn">
+          <div class="fd-model-name"><span>Neural Network</span><span class="fd-model-acc" id="acc-nn">—</span></div>
+          <div class="fd-bar-track"><div class="fd-bar-fill" id="bar-nn" style="width:0%;background:#7F77DD;"></div></div>
+        </div>
+      </div>
+      <div style="padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary);">
+        <div style="font-size:11px;color:var(--color-text-secondary);font-family:var(--font-sans);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Confusion Matrix</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div style="background:var(--color-background-success);border-radius:var(--border-radius-md);padding:6px 8px;text-align:center;">
+            <div style="font-size:16px;font-weight:500;color:var(--color-text-success);" id="cm-tp">0</div>
+            <div style="font-size:10px;color:var(--color-text-success);font-family:var(--font-sans);">True Pos</div>
+          </div>
+          <div style="background:var(--color-background-danger);border-radius:var(--border-radius-md);padding:6px 8px;text-align:center;">
+            <div style="font-size:16px;font-weight:500;color:var(--color-text-danger);" id="cm-fp">0</div>
+            <div style="font-size:10px;color:var(--color-text-danger);font-family:var(--font-sans);">False Pos</div>
+          </div>
+          <div style="background:var(--color-background-warning);border-radius:var(--border-radius-md);padding:6px 8px;text-align:center;">
+            <div style="font-size:16px;font-weight:500;color:var(--color-text-warning);" id="cm-fn">0</div>
+            <div style="font-size:10px;color:var(--color-text-warning);font-family:var(--font-sans);">False Neg</div>
+          </div>
+          <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:6px 8px;text-align:center;">
+            <div style="font-size:16px;font-weight:500;color:var(--color-text-primary);" id="cm-tn">0</div>
+            <div style="font-size:10px;color:var(--color-text-secondary);font-family:var(--font-sans);">True Neg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fd-bottom">
+    <div class="fd-chart-box">
+      <div class="fd-chart-title">Transaction volume (last 20)</div>
+      <div style="position:relative;height:120px;">
+        <canvas id="vol-chart" role="img" aria-label="Rolling bar chart showing recent transaction volume with fraud highlighted in red.">Live transaction volume chart.</canvas>
+      </div>
+    </div>
+    <div class="fd-alerts">
+      <div class="fd-alert-header">Alert log</div>
+      <div class="fd-alert-list" id="alert-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const merchants = ['Amazon','PayPal','Stripe','Shopify','Square','Venmo','Wise','Revolut','Binance','Steam','Netflix','Uber','Lyft','DoorDash','Coinbase'];
+const countries = ['US','UK','IN','DE','BR','NG','RU','CN','FR','AU','CA','MX'];
+const fraudCountries = ['NG','RU','CN','BR'];
+const cats = ['Retail','Travel','Food','Crypto','Streaming','Ride-share','Transfer'];
+
+const modelAccuracy = { rf: [0.96, 0.94], lr: [0.89, 0.87], dt: [0.92, 0.90], nn: [0.97, 0.95] };
+
+let running = true;
+let filter = 'all';
+let total = 0, fraudCount = 0, blocked = 0, confSum = 0;
+let tp = 0, fp = 0, fn = 0, tn = 0;
+let intervalId = null;
+let speed = 800;
+let volData = Array(20).fill(0);
+let fraudData = Array(20).fill(0);
+let volChart = null;
+let selectedModel = 'rf';
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function fmtAmt(v) { return '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function nowStr() { return new Date().toLocaleTimeString('en-US', { hour12: false }); }
+
+function isFraud(tx) {
+  let score = 0;
+  if (tx.amount > 800) score += 0.3;
+  if (tx.amount > 2000) score += 0.3;
+  if (fraudCountries.includes(tx.country)) score += 0.25;
+  if (tx.merchant === 'Coinbase' || tx.merchant === 'Binance') score += 0.2;
+  if (tx.hour < 3 || tx.hour > 23) score += 0.2;
+  score += rand(-0.1, 0.15);
+  return { isFraud: score > 0.55, score: Math.min(0.99, Math.max(0.01, score)) };
+}
+
+function generateTx() {
+  const amount = Math.random() < 0.08 ? rand(1500, 9000) : rand(5, 850);
+  const hour = Math.floor(rand(0, 24));
+  const merchant = pick(merchants);
+  const country = Math.random() < 0.15 ? pick(fraudCountries) : pick(countries.filter(c => !fraudCountries.includes(c)));
+  const cat = pick(cats);
+  return { id: 'TX' + Math.random().toString(36).substr(2, 7).toUpperCase(), amount, hour, merchant, country, cat };
+}
+
+function modelPredict(tx, fraudResult) {
+  const [baseAcc] = modelAccuracy[selectedModel];
+  const noise = rand(-0.04, 0.04);
+  const confScore = fraudResult.isFraud
+    ? Math.min(0.99, fraudResult.score + noise + 0.1)
+    : Math.max(0.01, 1 - fraudResult.score + noise);
+
+  const isCorrect = Math.random() < baseAcc;
+  const predicted = isCorrect ? fraudResult.isFraud : !fraudResult.isFraud;
+  return { predicted, confidence: confScore, correct: isCorrect };
+}
+
+function getTag(pred, conf) {
+  if (!pred) return { cls: 'ok', label: 'Clear' };
+  if (conf > 0.8) return { cls: 'fraud', label: 'Blocked' };
+  return { cls: 'review', label: 'Review' };
+}
+
+function addAlert(msg, type) {
+  const list = document.getElementById('alert-list');
+  const item = document.createElement('div');
+  item.className = 'fd-alert-item';
+  const icons = { fraud: '⛔', review: '⚠', info: 'ℹ' };
+  item.innerHTML = `<div class="fd-alert-icon">${icons[type]||'ℹ'}</div><div class="fd-alert-body"><div class="fd-alert-msg">${msg}</div><div class="fd-alert-time">${nowStr()}</div></div>`;
+  list.prepend(item);
+  while (list.children.length > 12) list.removeChild(list.lastChild);
+}
+
+function updateModels() {
+  const models = ['rf','lr','dt','nn'];
+  models.forEach(m => {
+    const el = document.getElementById('mi-' + m);
+    el.classList.toggle('active-model', m === selectedModel);
+  });
+  const [prec, rec] = modelAccuracy[selectedModel];
+  const f1 = (2 * prec * rec / (prec + rec));
+  document.getElementById('acc-rf').textContent = selectedModel === 'rf' ? (prec * 100).toFixed(1) + '%' : '—';
+  document.getElementById('acc-lr').textContent = selectedModel === 'lr' ? (modelAccuracy.lr[0] * 100).toFixed(1) + '%' : '—';
+  document.getElementById('acc-dt').textContent = selectedModel === 'dt' ? (modelAccuracy.dt[0] * 100).toFixed(1) + '%' : '—';
+  document.getElementById('acc-nn').textContent = selectedModel === 'nn' ? (modelAccuracy.nn[0] * 100).toFixed(1) + '%' : '—';
+  document.getElementById('bar-rf').style.width = (selectedModel === 'rf' ? 96 : 50) + '%';
+  document.getElementById('bar-lr').style.width = (selectedModel === 'lr' ? 89 : 40) + '%';
+  document.getElementById('bar-dt').style.width = (selectedModel === 'dt' ? 92 : 45) + '%';
+  document.getElementById('bar-nn').style.width = (selectedModel === 'nn' ? 97 : 55) + '%';
+}
+
+function tick() {
+  const tx = generateTx();
+  const fraudResult = isFraud(tx);
+  const prediction = modelPredict(tx, fraudResult);
+  const tag = getTag(prediction.predicted, prediction.confidence);
+  
+  total++;
+  confSum += prediction.confidence;
+
+  if (prediction.predicted && fraudResult.isFraud) tp++;
+  else if (prediction.predicted && !fraudResult.isFraud) fp++;
+  else if (!prediction.predicted && fraudResult.isFraud) fn++;
+  else tn++;
+
+  if (prediction.predicted) {
+    fraudCount++;
+    if (tag.cls === 'fraud') { blocked += tx.amount; }
+    if (tx.amount > 2000) addAlert(`High-value fraud: ${tx.merchant} ${fmtAmt(tx.amount)} from ${tx.country}`, 'fraud');
+    else if (tag.cls === 'review') addAlert(`Under review: ${tx.id} — score ${(prediction.confidence * 100).toFixed(0)}%`, 'review');
+    else addAlert(`Blocked: ${tx.merchant} ${fmtAmt(tx.amount)}`, 'fraud');
+  }
+
+  document.getElementById('m-total').textContent = total.toLocaleString();
+  document.getElementById('m-fraud').textContent = fraudCount;
+  document.getElementById('m-fraud-pct').textContent = ((fraudCount/total)*100).toFixed(2) + '% rate';
+  document.getElementById('m-conf').textContent = ((confSum/total)*100).toFixed(1) + '%';
+  document.getElementById('m-blocked').textContent = '$' + Math.round(blocked).toLocaleString();
+  document.getElementById('cm-tp').textContent = tp;
+  document.getElementById('cm-fp').textContent = fp;
+  document.getElementById('cm-fn').textContent = fn;
+  document.getElementById('cm-tn').textContent = tn;
+
+  const sparkMs = Math.round(rand(12, 45));
+  const predMs = Math.round(rand(3, 18));
+  document.getElementById('p-in').textContent = total;
+  document.getElementById('p-spark').textContent = sparkMs + 'ms';
+  document.getElementById('p-feat').textContent = total;
+  document.getElementById('p-pred').textContent = predMs + 'ms';
+  document.getElementById('p-dec').textContent = fraudCount;
+
+  volData.shift(); volData.push(1);
+  fraudData.shift(); fraudData.push(prediction.predicted ? 1 : 0);
+  if (volChart) volChart.update('none');
+
+  const feed = document.getElementById('tx-feed');
+  if (filter === 'fraud' && !prediction.predicted) return;
+  const row = document.createElement('div');
+  row.className = 'fd-row new' + (prediction.predicted ? ' fraud' : '');
+  const scoreBar = `<span style="font-size:10px;font-family:var(--font-sans);color:${prediction.predicted ? 'var(--color-text-danger)' : 'var(--color-text-success)'};">${(prediction.confidence * 100).toFixed(0)}% <span style="font-size:9px;color:var(--color-text-secondary);">(${selectedModel.toUpperCase()})</span></span>`;
+  row.innerHTML = `<span>${nowStr()}</span><span>${tx.merchant}</span><span>${fmtAmt(tx.amount)}</span><span>${tx.country}</span><span><span class="fd-tag ${tag.cls}">${tag.label}</span></span><span>${scoreBar}</span>`;
+  feed.prepend(row);
+  while (feed.children.length > 60) feed.removeChild(feed.lastChild);
+
+  document.getElementById('sys-time').textContent = nowStr();
+}
+
+function toggleStream() {
+  running = !running;
+  const btn = document.getElementById('toggle-btn');
+  if (running) {
+    btn.textContent = 'Pause';
+    btn.classList.add('active');
+    startInterval();
+  } else {
+    btn.textContent = 'Resume';
+    btn.classList.remove('active');
+    clearInterval(intervalId);
+  }
+}
+
+function clearFeed() {
+  document.getElementById('tx-feed').innerHTML = '';
+  document.getElementById('alert-list').innerHTML = '';
+  total = fraudCount = blocked = confSum = tp = fp = fn = tn = 0;
+  volData = Array(20).fill(0); fraudData = Array(20).fill(0);
+  if (volChart) volChart.update('none');
+  ['m-total','m-fraud','cm-tp','cm-fp','cm-fn','cm-tn'].forEach(id => document.getElementById(id).textContent = '0');
+  document.getElementById('m-fraud-pct').textContent = '—';
+  document.getElementById('m-conf').textContent = '—';
+  document.getElementById('m-blocked').textContent = '$0';
+}
+
+function setFilter(f) { filter = f; }
+
+function startInterval() {
+  clearInterval(intervalId);
+  intervalId = setInterval(tick, speed);
+}
+
+document.getElementById('speed-slider').addEventListener('input', function() {
+  speed = parseInt(this.value);
+  document.getElementById('speed-label').textContent = speed + 'ms';
+  if (running) startInterval();
+});
+
+document.getElementById('model-select').addEventListener('change', function() {
+  selectedModel = this.value;
+  updateModels();
+});
+
+window.addEventListener('load', function() {
+  const ctx = document.getElementById('vol-chart').getContext('2d');
+  volChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Array(20).fill(''),
+      datasets: [
+        { label: 'Normal', data: volData, backgroundColor: '#1D9E75', borderRadius: 2 },
+        { label: 'Fraud', data: fraudData, backgroundColor: '#E24B4A', borderRadius: 2 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { stacked: true, display: false },
+        y: { stacked: true, display: false, min: 0, max: 2 }
+      }
+    }
+  });
+
+  updateModels();
+  startInterval();
+  setInterval(() => { document.getElementById('sys-time').textContent = nowStr(); }, 1000);
+});
+</script>
